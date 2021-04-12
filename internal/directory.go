@@ -86,7 +86,7 @@ func GetPhotoDev(dir, slugName string) string {
 func GetPhotoProd(dir, slugName string) string {
 	sectionPath := filepath.Join(".", "photos", dir)
 	if _, err := os.Stat(sectionPath); !os.IsNotExist(err) {
-		Resize(sectionPath, slugName, slug.Make(dir), []int{2048, 750})
+		Resize(sectionPath, slugName, slug.Make(dir), []int{2048, 750}, true)
 		config := viper.New()
 		config.AddConfigPath(".moul")
 		config.SetConfigType("toml")
