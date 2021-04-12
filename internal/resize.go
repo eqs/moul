@@ -3,6 +3,8 @@ package internal
 import (
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,6 +14,10 @@ import (
 	"github.com/disintegration/imaging"
 	"github.com/gosimple/slug"
 	"github.com/spf13/viper"
+
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
+	"golang.org/x/image/math/fixed"
 )
 
 // Collection struct
@@ -76,6 +82,49 @@ func manipulate(id, inPath, author, photoType string, size int) {
 	}
 }
 
+func addLabel(img *image.NRGBA, x, y int, label string) {
+	col := color.NRGBA{200, 100, 0, 255}
+	point := fixed.Point26_6{fixed.Int26_6(x * 64), fixed.Int26_6(y * 64)}
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.NewUniform(col),
+		Face: basicfont.Face7x13,
+		Dot:  point,
+	}
+	d.DrawString(label)
+}
+
+func saveImage(id, inPath, author, photoType string, size int, img *image.NRGBA) {
+	fn := filepath.Base(inPath)
+	name := GetFileName(fn, author)
+
+	dir := getFilePath(id, photoType, size)
+	out := filepath.Join(dir, name + ".jpg")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Fatal(err)
+	}
+
+	err := imaging.Save(img, out)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+
+// Manipulate image
+func resizeImage(img image.Image, size int) *image.NRGBA {
+	newImage := imaging.Resize(img, size, 0, imaging.Lanczos)
+	return newImage
+}
+
+func addWatermark(img *image.NRGBA, watermarkImage image.Image) *image.NRGBA {
+	var pos = image.Point{0, img.Bounds().Max.Y - watermarkImage.Bounds().Max.Y}
+	var r = image.Rectangle{pos, img.Bounds().Size()}
+	draw.Draw(img, r, watermarkImage, image.ZP, draw.Over)
+	return img
+}
+
 // GetDirs func
 func GetDirs(path string) []string {
 	var folders []string
@@ -131,7 +180,7 @@ func loadImage(fileInput string) (image.Image, error) {
 }
 
 // Resize func
-func Resize(inPath, author, outPrefix string, sizes []int) {
+func Resize(inPath, author, outPrefix string, sizes []int, watermark bool) {
 	unique := UniqueID()
 
 	photos := GetPhotos(inPath)
@@ -149,6 +198,11 @@ func Resize(inPath, author, outPrefix string, sizes []int) {
 	allPhotos.ReadInConfig()
 	ap := allPhotos.GetStringSlice(slug.Make(outPrefix))
 
+	watermarkImage, err := imaging.Open("watermark.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for _, photo := range photos {
 		fn := slug.Make(filepath.Base(photo))
 
@@ -158,8 +212,17 @@ func Resize(inPath, author, outPrefix string, sizes []int) {
 		if config.GetString(fn+".sha") == GetSHA1(photo) {
 			continue
 		}
-		for _, size := range sizes {
-			manipulate(unique, photo, author, slug.Make(outPrefix), size)
+
+		for idx, size := range sizes {
+			src, err := imaging.Open(photo)
+			if err != nil {
+				log.Fatal(err)
+			}
+			newImage := resizeImage(src, size)
+			if watermark && idx == 0 {
+				newImage = addWatermark(newImage, watermarkImage)
+			}
+			saveImage(unique, photo, author, slug.Make(outPrefix), size, newImage)
 
 			ap = append(ap,
 				filepath.Join(".", ".moul", "photos",

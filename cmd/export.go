@@ -77,14 +77,14 @@ var Export = &cobra.Command{
 		if _, err := os.Stat(coverPath); os.IsNotExist(err) {
 			color.Yellow("Skipped `cover`")
 		} else {
-			internal.Resize(coverPath, slugName, "cover", []int{2560, 1280, 620})
+			internal.Resize(coverPath, slugName, "cover", []int{2560, 1280, 620}, false)
 		}
 
 		avatarPath := filepath.Join(dir, "photos", "avatar")
 		if _, err := os.Stat(avatarPath); os.IsNotExist(err) {
 			color.Yellow("Skipped `avatar`")
 		} else {
-			internal.Resize(avatarPath, slugName, "avatar", []int{512, 320})
+			internal.Resize(avatarPath, slugName, "avatar", []int{512, 320}, false)
 		}
 
 		config := viper.New()
