@@ -119,7 +119,9 @@ func resizeImage(img image.Image, size int) *image.NRGBA {
 }
 
 func addWatermark(img *image.NRGBA, watermarkImage image.Image) *image.NRGBA {
-	draw.Draw(img, watermarkImage.Bounds(), watermarkImage, image.ZP, draw.Over)
+	var pos = image.Point{0, img.Bounds().Max.Y - watermarkImage.Bounds().Max.Y}
+	var r = image.Rectangle{pos, img.Bounds().Size()}
+	draw.Draw(img, r, watermarkImage, image.ZP, draw.Over)
 	return img
 }
 
