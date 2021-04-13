@@ -309,7 +309,7 @@ func Template() string {
     </style>
     <link rel="stylesheet" href="assets/moul.0c839.css">
 </head>
-<body>
+<body oncontextmenu="return false;">
 <div id="moul">
     <div class="heading <%= style["cover"] %>">
         <%= if (isProd == true) { %>
