@@ -172,7 +172,7 @@ func Template() string {
             }
             .heading.right .profile,
             .heading.left .profile {
-                width: 50%;
+                width: 100%;
             }
         }
         .profile {
